@@ -1,21 +1,44 @@
 import React, { useState } from 'react';
-import { z } from 'zod';
+import { z } from 'zod'; 
+
+const emailSchema = z
+.string()
+.email({message:"Insira um email Válido."})
+
+const email = "user@example.com"
+
+try {
+  emailSchema.parse(email);
+} catch (error) {
+  console.error("Email Inválido:",error.message);
+}
+
 
 const combinedFormSchema = z.object({
-  name: z.string().min(1, 'Nome é necessário'),
-  contactType: z.enum(['Email','Celular'],'Selecione um método de contato'),
-  contact: z.string().nonempty('O campo de contato é necessário').refine((data, context) =>{
-    if (context.parent.contactType === 'Email') {
-      return z.string().email().safeParse(data).success;
-    }
-    if (context.parent.contactType === 'Celular') {
-      return z.string().regex(/^\d+$/, 'Somente números são permitidos').safeParse(data).success;
-    }
-    return false;
-   }, 'Dados de contato inválidos'),
-    personType: z.enum(['Física','Jurídica'], 'Selecione o tipo de pessoa'),
+  name: z.string().min(3, 'Nome é necessário'),
+  
+  contact: z.string().nonempty('O campo de contato é necessário'),
+  
+   
+
+    
+    personType: z.enum(['Física','Jurídica'], {invalid_type_error:"Tipo de pessoa inexistente"}),
     password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
- });
+ })
+ .superRefine((arg,ctx) =>{
+    const isvalidemail = z.string().email().safeParse(arg.contact).success
+    if (arg.contact === 'Email' && !isvalidemail) {
+      ctx.addIssue({
+        path:["contact"],
+        code: z.ZodIssueCode.too_big,
+        maximum: 3,
+        type: "array",
+        inclusive: true,
+        message: "Email inválido",
+      });
+    }
+    
+ })
 
 const InputField = ({
   type,
